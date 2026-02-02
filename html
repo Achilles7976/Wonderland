@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Eerie Covenant - Aquiles & Nox</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-color: #0d0216;
+            background-image: 
+                linear-gradient(rgba(13, 2, 22, 0.6), rgba(13, 2, 22, 0.8)), 
+                url('./bosque.jpg'); 
+            background-size: cover;
+            background-position: center;
+            font-family: 'Georgia', serif;
+        }
+
+        #canvas-wonderland {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* CONTENEDOR DEL CONTRATO */
+        .contract-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(15, 5, 25, 0.85);
+            padding: 30px;
+            border: 2px dashed #5e35b1;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border-radius: 8px;
+            backdrop-filter: blur(15px);
+            color: #d1c4e9;
+            transition: opacity 0.8s, transform 0.8s;
+        }
+
+        /* PANTALLA FINAL */
+        #final-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.5s ease-in;
+            background: radial-gradient(circle, rgba(45,10,80,0.5) 0%, rgba(13,2,22,1) 90%);
+        }
+
+        .final-text {
+            color: #e1bee7;
+            font-size: 2rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px #7b1fa2, 0 0 40px #ce93d8;
+            padding: 20px;
+            max-width: 85%;
+        }
+
+        .legal-clause {
+            text-align: justify;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #b0bec5;
+            border-top: 1px solid #4a148c;
+            border-bottom: 1px solid #4a148c;
+            padding: 15px 0;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            min-height: 60px;
+            align-items: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Georgia', serif;
+        }
+
+        #acceptBtn { 
+            background-color: #4527a0; 
+            color: white; 
+            box-shadow: 0 0 15px #673ab7;
+            transition: transform 0.2s;
+        }
+        #acceptBtn:hover { transform: scale(1.05); }
+
+        #declineBtn { 
+            background-color: #1a1a1a; 
+            color: #555; 
+            border: 1px solid #333;
+            position: relative;
+            z-index: 999;
+            /* Quitamos la transición de posición para que el JS controle el salto */
+        }
+
+        #musicControl {
+            background: transparent;
+            color: #9575cd;
+            font-size: 0.65rem;
+            border: 1px solid #5e35b1;
+            padding: 5px 10px;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        #musicControl:hover { opacity: 1; background: rgba(94, 53, 177, 0.2); }
+
+        /* ESTILO DE LAS CARTAS VOLADORAS */
+        .card-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1001;
+            font-size: 28px;
+            animation: explode 0.8s forwards ease-out;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) rotate(var(--tr)); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-wonderland"></canvas>
+
+    <div id="contract" class="contract-container">
+        <h1>An Eerie Covenant</h1>
+        <div class="legal-clause">
+            "We're all mad here..."<br><br>
+            Este pacto irrevocable, nacido en las sombras de febrero de 2026, sella la unión eterna entre 
+            <strong>Aquiles Adrián Millán Parra</strong> y <strong>Ivana Valentina Contreras Reque</strong>. 
+            Al aceptar, juras que nuestras sombras caminarán juntas por los jardines del abismo, 
+            donde el tiempo no existe y el destino es solo una carta más en la baraja. 
+            Lo que el destino ha unido, que nadie lo separe.
+
+            Y bueno tambien aceptas ser my Valentine's...
+
+            Te amo.
+        </div>
+        
+        <div class="btn-container">
+            <button id="acceptBtn">Seal the Pact</button>
+            <button id="declineBtn">Don't Resist</button>
+        </div>
+
+        <button id="musicControl" onclick="handleMusic()">PLAY THE TWISTED TUNE</button>
+    </div>
+
+    <div id="final-screen">
+        <div class="final-text">
+            Let's go down the rabbit hole together
+        </div>
+    </div>
+
+    <audio id="bgTrack" loop>
+        <source src="high.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const symbols = ['♠', '♥', '♣', '♦'];
+        const canvas = document.getElementById('canvas-wonderland');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Partículas ambientales de fondo
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -50;
+                this.size = Math.random() * 15 + 10;
+                this.speedY = Math.random() * 0.8 + 0.2;
+                this.symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                this.alpha = Math.random() * 0.1 + 0.05;
+                this.rotation = Math.random() * Math.PI * 2;
+            }
+            update() {
+                this.y += this.speedY;
+                if (this.y > canvas.height) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = `rgba(149, 117, 205, ${this.alpha})`;
+                ctx.font = `${this.size}px serif`;
+                ctx.fillText(this.symbol, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        for (let i = 0; i < 20; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- LÓGICA DEL BOTÓN EVASIVO CORREGIDA ---
+        const declineBtn = document.getElementById('declineBtn');
+        
+        declineBtn.addEventListener('mouseover', function() {
+            const rect = this.getBoundingClientRect();
+            
+            // Explosión donde estaba
+            createExplosion(rect.left + rect.width/2, rect.top + rect.height/2, 10);
+
+            // Desaparecer y saltar
+            this.style.opacity = '0';
+            this.style.transform = 'scale(0)';
+
+            setTimeout(() => {
+                const margin = 100;
+                const newX = Math.random() * (window.innerWidth - rect.width - margin) + margin/2;
+                const newY = Math.random() * (window.innerHeight - rect.height - margin) + margin/2;
+
+                this.style.position = 'fixed';
+                this.style.left = `${newX}px`;
+                this.style.top = `${newY}px`;
+                this.style.opacity = '1';
+                this.style.transform = `scale(1) rotate(${(Math.random() - 0.5) * 20}deg)`;
+                
+                // Explosión donde aparece
+                createExplosion(newX + rect.width/2, newY + rect.height/2, 8);
+            }, 150);
+        });
+
+        // --- LÓGICA DE ACEPTAR ---
+        document.getElementById('acceptBtn').addEventListener('click', () => {
+            const contract = document.getElementById('contract');
+            const finalScreen = document.getElementById('final-screen');
+            const rect = contract.getBoundingClientRect();
+
+            createExplosion(rect.left + rect.width/2, rect.top + rect.height/2, 40);
+            
+            contract.style.opacity = '0';
+            contract.style.transform = 'scale(0.8) translateY(-20px)';
+            
+            setTimeout(() => {
+                contract.style.display = 'none';
+                finalScreen.style.opacity = '1';
+                finalScreen.style.pointerEvents = 'auto';
+                createExplosion(window.innerWidth/2, window.innerHeight/2, 50);
+            }, 800);
+        });
+
+        function createExplosion(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'card-particle';
+                p.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+                p.style.setProperty('--tx', `${(Math.random() - 0.5) * 400}px`);
+                p.style.setProperty('--ty', `${(Math.random() - 0.5) * 400}px`);
+                p.style.setProperty('--tr', `${(Math.random() - 0.5) * 1000}deg`);
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
+        const audio = document.getElementById('bgTrack');
+        function handleMusic() {
+            if (audio.paused) { 
+                audio.play(); 
+                document.getElementById('musicControl').innerText = "THE TUNE IS MAD"; 
+            } else { 
+                audio.pause(); 
+                document.getElementById('musicControl').innerText = "PLAY THE TWISTED TUNE"; 
+            }
+        }
+    </script>
+</body>
+</html>
